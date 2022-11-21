@@ -6,3 +6,5 @@ keras
 torch
 pytorch-nlp
 pytorch-pretrained-bert
+transformers
+datasets
