@@ -3,8 +3,12 @@ scikit-learn
 pandas
 matplotlib
 keras
-torch
 pytorch-nlp
 pytorch-pretrained-bert
 transformers
 datasets
+accelerate
+nvidia-ml-py3
+pynvml
+tensorflow
+torch
