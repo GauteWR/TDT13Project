@@ -4,39 +4,50 @@ import torch
 
 # ------------- Dataset -----------------
 
-data = load.load_dataset("wnut_17")
+data = load.load_dataset("conll2003")
+
+print("Dataset loaded")
 
 # ------------- BERT Pytorch -----------------
 
-tokenizer_bert = tf.AutoTokenizer.from_pretrained("bert-base-uncased")
-model_bert = tf.BertForSequenceClassification.from_pretrained("bert-base-uncased")
+tokenizer_bert = tf.AutoTokenizer.from_pretrained("bert-base-uncased", num_labels=14)
+print("Tokenizer loaded")
+model_bert = tf.BertForTokenClassification.from_pretrained("bert-base-uncased", num_labels=14)
+print("Model loaded")
 
 def tokenize_input(input):
-    tokenized = tokenizer_bert(input['tokens'], truncation=True, is_split_into_words=True)
-    token_labels = []
-    for index, token in enumerate(input["ner_tags"]):
-        prev_map_id = -1
-        ids = []
-        map_ids = tokenized.word_ids(batch_index=index)
-        for id in map_ids:
-            if id != prev_map_id:
-                ids.append(token[id])
+    tokens = []
+    tokenized_inputs = tokenizer_bert(input["tokens"], truncation=True, padding=True, is_split_into_words=True)
+    for index, label in enumerate(input[f"ner_tags"]):
+        previous_id = None
+        token_ids = []
+        word_ids = tokenized_inputs.word_ids(batch_index=index)
+        for id in word_ids:
+            if id is None:
+                token_ids.append(-100)
+            elif id != previous_id:
+                token_ids.append(label[id])
             else:
-                ids.append(-100)
-            prev_map_id = id
-        token_labels.append(ids)
-    tokenized["labels"] = token_labels
-    return tokenized
+                token_ids.append(-100)
+            previous_id = id
 
-data_collator_bert = tf.DataCollatorWithPadding(tokenizer=tokenizer_bert) # Do data collation with the BERT tokenizer
+        tokens.append(token_ids)
+
+    tokenized_inputs["labels"] = tokens
+    return tokenized_inputs
+
+
 data_tokenized_bert = data.map(tokenize_input, batched=True) # Tokenize data with BERT tokenizer
+print("Tokenized")
+data_collator_bert = tf.DataCollatorForTokenClassification(tokenizer=tokenizer_bert) # Do data collation with the BERT tokenizer
+print("Collecter done")
 
 trainig_arguments_bert = tf.TrainingArguments( # Init traning arguments
     output_dir="./bert_token_class",
     learning_rate=4e-5,
-    per_device_train_batch_size=1,
-    per_device_eval_batch_size=1,
-    num_train_epochs=1, # 6250 global steps
+    per_device_train_batch_size=12,
+    per_device_eval_batch_size=12,
+    num_train_epochs=10, 
     weight_decay=0.05,
     gradient_checkpointing=True,
     fp16=True,

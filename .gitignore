@@ -1,0 +1,4 @@
+NLPTests/bert_text_class
+NLPTests/bert_token_class
+NLPTests/ernie_token_class
+NLPTests/ernie_text_class
